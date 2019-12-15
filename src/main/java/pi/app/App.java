@@ -1,9 +1,10 @@
 package pi.app;
 
+import pi.mqtt.Subscribe;
+
 public class App {
 
 	public static void main(String[] args) {
-		System.out.println("nowy projekt MQTT !!");
+		Subscribe sub = new Subscribe();
 	}
-
 }
