@@ -11,6 +11,7 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.MqttSecurityException;
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 
@@ -23,19 +24,19 @@ public class Subscribe {
 		//String topic        = "T/GettingStarted/pubsub";
 		String topic        = "Home/T1";
         int qos             = 0;
-        String broker       = "tcp://mqtt.eclipse.org:1883";
+        String broker       = "tcp://test.mosquitto.org:1883";
         String clientId     = "PCSub-123411343242424226gsg";
-              
+        MemoryPersistence persistence = new MemoryPersistence();    
         System.out.println("..................................TopicSubscriber initializing..................................");
 
         try {
             // Create an Mqtt client
             MqttClient mqttClient = new MqttClient(broker, clientId);
             MqttConnectOptions connOpts = new MqttConnectOptions();
-            connOpts.setCleanSession(true);
+            connOpts.setCleanSession(false);
             connOpts.setAutomaticReconnect(true);
-            connOpts.setKeepAliveInterval(15);
-            connOpts.setConnectionTimeout(30);
+            connOpts.setKeepAliveInterval(5);
+            connOpts.setConnectionTimeout(0);
             
             mqttClient.setCallback(new MqttCallback() {
 
@@ -87,19 +88,31 @@ public class Subscribe {
 
                 public void connectionLost(Throwable cause) {
                 	System.out.println("Connection to broker messaging lost!" + cause.getMessage());
-                	
+//                	try {
+//						Thread.sleep(1000);
+//					} catch (InterruptedException e1) {
+//						// TODO Auto-generated catch block
+//						e1.printStackTrace();
+//					}
 //                    try {
 //                    	System.out.println("1");
-//						//mqttClient.connect(connOpts);
+//                    	//Thread.sleep(1000);
+//						mqttClient.connect(connOpts);
+//						//Thread.sleep(5000);
 //						if (mqttClient.isConnected()) {
 //							System.out.println("jebne connected");
+//							//clientId = mqttClient.generateClientId();
+//							//mqttClient.connect(connOpts);
+//							System.out.println(mqttClient.isConnected());
+//							System.out.println(mqttClient.getClientId());
+//							
 //						} else {
 //							System.out.println("NOT connected");
 //						}
 //						System.out.println("1.0");
 //						//mqttClient.reconnect();
 //						System.out.println("1.1");
-//						//mqttClient.subscribe(subTopic, qos);
+//						mqttClient.subscribe(topic, qos);
 //						System.out.println("1.2");
 //					} catch (MqttSecurityException e) {
 //						// TODO Auto-generated catch block
@@ -109,7 +122,10 @@ public class Subscribe {
 //						// TODO Auto-generated catch block
 //						System.out.println("3");
 //						e.printStackTrace();
-//					}
+////					} catch (InterruptedException e) {
+////						// TODO Auto-generated catch block
+////						e.printStackTrace();
+					//}
                 }
 
                 public void deliveryComplete(IMqttDeliveryToken token) {
@@ -146,5 +162,7 @@ public class Subscribe {
             me.printStackTrace();
         }
 	}
-
+	
+	
+	
 }

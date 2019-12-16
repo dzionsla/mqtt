@@ -1,19 +1,22 @@
 package pi.mqtt;
 
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 
 public class Publish {
-	public Publish() {
+	public Publish() throws InterruptedException {
         String topic        = "Home/T1";
         //String content      = "PC: Hello from PC";
         String content      = "Temperature 1: 21.31, Temperature 2: 23.45";
         int qos             = 0;
-        String broker       = "tcp://mqtt.eclipse.org:1883";
-        String clientId     = "PCPub";
+        String broker       = "tcp://test.mosquitto.org:1883";
+        String clientId     = "PCPubdwewg";
         
         System.out.println("..................................TopicPublisher initializing..................................");
 
@@ -37,7 +40,11 @@ public class Publish {
             System.out.println("Publishing message: " + content);
             
             // Publish the message
-            mqttClient.publish(topic, message);
+            
+            for (int i = 0; i < 2000; i++) {
+            	mqttClient.publish(topic, message);
+            	TimeUnit.SECONDS.sleep(5);
+			}
             
             // Disconnect the client
             mqttClient.disconnect();
@@ -55,7 +62,7 @@ public class Publish {
         }
     }
 	
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
     	Publish mqttPubl = new Publish();
     }
 }
