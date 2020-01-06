@@ -14,13 +14,18 @@
 	           uri="antlib:org.apache.maven.artifact.ant"
 	           classpathref="maven-ant-tasks.classpath" />
     	
-    <!-- Add maven install target to be run before deploy -->
-    	
+    <!-- Add maven install target to be run before deploy 
 	<target name="maven-install"> 
-		<artifact:mvn pom="pom.xml"> 
+		  <artifact:mvn pom="pom.xml"> 
 			<arg value="install"/> 
 		</artifact:mvn> 
-	</target> 
+	</target>-->
+	
+	<target name="maven-install">
+	    <exec dir="." executable="cmd">
+	        <arg line="/c mvn install" />
+	    </exec>
+	</target>
 
     <!-- Locate the prokect jar and transfer via scp to RASPBERRY PI -->
 	<target name="transfer" depends="maven-install">

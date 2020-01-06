@@ -10,11 +10,13 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
-import org.eclipse.paho.client.mqttv3.MqttSecurityException;
-import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 
+//import com.google.firebase.database.DatabaseReference;
+
+import pi.firebase.FirebaseInit;
+import pi.firebase.TemperatureModelFB;
 import pi.mySQL.HibernateUtil;
 import pi.mySQL.TemperatureModel;
 
@@ -25,9 +27,15 @@ public class Subscribe {
 		String topic        = "Home/T1";
         int qos             = 0;
         String broker       = "tcp://test.mosquitto.org:1883";
-        String clientId     = "PCSub-123411343242424226gsg";
-        MemoryPersistence persistence = new MemoryPersistence();    
+        //String broker       = "tcp://192.168.1.232:1883";
+        //String broker       = "tcp://localhost:1883";
+        String clientId     = "RasPi4";
+   
         System.out.println("..................................TopicSubscriber initializing..................................");
+        
+        // Connection to Firebase
+        FirebaseInit firebase = new FirebaseInit("Home/Temperature");
+        //firebase.fireBaseInit("Home/Temperature"); nope
 
         try {
             // Create an Mqtt client
@@ -51,40 +59,18 @@ public class Subscribe {
                             "\n\tMessage: " + msg + 
                             "\n\tQoS:     " + message.getQos() + "\n");
                     
-            		String sensor1 = null;
-                    String sensor2 = null;
-                    Pattern p1 = Pattern.compile("\\d+.\\d+");
-            		Matcher m1 = p1.matcher(msg);
-            		int cnt = 0;
-            		while (m1.find()) {
-            			if (cnt == 0) {
-            				sensor1 = m1.group();
-            			} else {
-            				sensor2 = m1.group();
-            			}
-            			cnt++;
-            		}
-            		System.out.println(sensor1 + " - " + sensor2);
-            		
-            		TemperatureModel tm1 = new TemperatureModel(sensor1, sensor2);
+                    String temperature = parseTemperature(msg);           		
+            		String sensorNumber = parseSensorNumber(msg);
                     
-                    Transaction transaction = null;
-            		
-            		try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-                        // start a transaction
-                        transaction = session.beginTransaction();
-                        
-                        session.save(tm1);
-                        
-                        // commit transaction
-                        transaction.commit();
-                    } catch (Exception e1) {
-                        if (transaction != null) {
-                            transaction.rollback();
-                        }
-                        e1.printStackTrace();
-                    } 
-                }
+            		// Connection and send to mySQL
+//            		TemperatureModel tm1 = new TemperatureModel(temperature, temperature);
+//                    mySQLConnection(tm1); 
+                    
+                    // Send to Firebase Realtime Database
+            		//firebase.getRef().child("T" + sensorNumber).push().setValueAsync(temperature);
+            		firebase.getRef().child("T" + sensorNumber).push().setValueAsync(new TemperatureModelFB(temperature));
+
+                }	
 
                 public void connectionLost(Throwable cause) {
                 	System.out.println("Connection to broker messaging lost!" + cause.getMessage());
@@ -137,20 +123,11 @@ public class Subscribe {
             // Connect the client
             System.out.println("Connecting to broker messaging at " + broker);
             mqttClient.connect(connOpts);
-            if (mqttClient.isConnected()) {
-				System.out.println("CONNECTED !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-			}
             System.out.println("Connected");
             
-            // Topic filter the client will subscribe to
-            final String subTopic = topic;
-            
-            // Callback - Anonymous inner-class for receiving messages
-           
-            
             // Subscribe client to the topic filter and a QoS level of 0
-            System.out.println("Subscribing client to topic: " + subTopic);
-            mqttClient.subscribe(subTopic, qos);
+            System.out.println("Subscribing client to topic: " + topic);
+            mqttClient.subscribe(topic, qos);
             System.out.println("Subscribed");
 
         } catch (MqttException me) {
@@ -161,8 +138,58 @@ public class Subscribe {
             System.out.println("excep " + me);
             me.printStackTrace();
         }
+        
+        
 	}
 	
+	private void mySQLConnection(TemperatureModel tm1) {
+		Transaction transaction = null;
+		
+		try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            // start a transaction
+            transaction = session.beginTransaction();
+            
+            session.save(tm1);
+            
+            // commit transaction
+            transaction.commit();
+        } catch (Exception e1) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            e1.printStackTrace();
+        }
+	}
+	
+	private String parseTemperature(String msg) {
+		// Get temperature
+		String sensor1 = null;
+        String sensor2 = null;
+        
+        Pattern p1 = Pattern.compile("\\d+.\\d+");
+		Matcher m1 = p1.matcher(msg);
+		int cnt = 0;
+		while (m1.find()) {
+			if (cnt == 0) {
+				sensor1 = m1.group();
+			} else {
+				sensor2 = m1.group();
+			}
+			cnt++;
+		}
+		//System.out.println(sensor1 + " - " + sensor2);
+		return sensor1;
+	}
+	
+	private String parseSensorNumber(String msg) {
+		// Get child
+		String child = null;
+		Pattern p2 = Pattern.compile("\\d+");
+		Matcher m2 = p2.matcher(msg);
+		m2.find();
+		//System.out.println(child);
+		return m2.group();
+	}
 	
 	
 }
